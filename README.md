@@ -4,13 +4,47 @@ into a tiny storage device. A host program on the PC sends it commands
 over a serial line (UART), and the device stores and returns blocks 
 of data from a small simulated memory.
 
-What it does:
+In simpler terms, laptop and it's SSD are two separate computers
+talking to each other. The laptop says "give me the data stored at
+block 500", the SSD's own small processor receives the request,
+finds the data and sends it back with "OK". That conversation follows
+struct rules (NVMe over PCIe).
+
+This project builds a miniature version of this conversation:
+
+* The Device -- small ARM mcu, emulated in QEMU, running firmware
+    written here. Pretends to be a tiny storage device with a few
+    blocks of memory.
+
+* The host -- Python program on PC that sends it commands like READ,
+    WRITE, IDENTIFY.
+
+* The wire -- serial line (UART) instead of PCIe, because it's simple
+    and every mcu has one.
+
+I'd be doing my own small protocol. Every message has a header,
+a command data, and a checksum to detect corruption.
+
+Validation shall be done with python tests that checks correct command
+work, and then tests the firmware by sending a garbage, half-messages,
+and floods to see whether the device stays correct and doesn't crash.
+
 The host and device speak a simple framed protocol. 
 Each message has a header, a command (IDENTIFY, STATUS, READ, WRITE), 
 a payload, and a CRC checksum. The firmware receives bytes through
 an interrupt-driven UART driver, rebuilds the frames, checks them, runs
 the command, and replies with data and a status code. Broken or invalid
 input gets a proper error response instead of a crash or a hang.
+
+Real Examples in the world I can refer to are:
+    1. SSD in my laptop
+    2. USB stick
+    3. Car (over CAN)
+    4. Printer
+    5. Thermostat / sensor
+
+Why M3? QEMU emulates it out of the box. Well documented. Classic teaching
+target. Cortex-M is simpler than Runtime (which I believe is used mostly).  
 
 Language: C
 Build: CMake
@@ -58,6 +92,72 @@ mps2-an511           ARM MPS2 with AN511 DesignStart FPGA image for Cortex-M3
 mps2-an521           ARM MPS2 with AN521 FPGA image for dual Cortex-M33
 
 
-
 net use W: \\wsl.localhost\Ubuntu /persistent:yes 
 for tools folder, I utilize W: as wsl.localhost directory.
+
+
+https://support.arm.com/documentation/ka001328/1-0/
+What is the boot-up sequence for Cortex-M3?
+
+The Cortex-M3 can only boot from address 0x0 from reset, 
+however the vector table can be relocated during program execution, 
+by writing to the Vector Table Offset Register at address 0xE000ED08.
+
+The boot-up sequence for M3 is different to traditional ARM cores, 
+in that the first fetch from address 0x0 is the initial value of the SP, 
+the second value is reset vector, i.e. the starting address of program code.
+The other thing to note is that the vector table entries for Cortex-M3 
+are address values and not branch instructions like traditional ARM cores. 
+Also creating a table entry with bit [0] clear generates an INVSTATE fault 
+on the first instruction of the handler corresponding to this vector.
+
+
+A little about Cortex-M3 itself ->
+
+It's a low-power processor, features low gate count, low interrupt latency
+and low-cost debug. It's intended for deeply embedded applications that
+require FIQ interrupt response features.
+
+It has:
+* Processor core
+* Nested Vectored Interrupt Controller (NVIC) closely integrated with the core
+* multiple high-performance bus interfaces
+* low-cost debug solution:
+    with optional ability to implement ->
+    breakpoints, watchpoints, tracing and system profiling.
+    support -> printf style debugging.
+    bridge to a Trace Port Analyzer (TPA).
+
+optional -> Memory Protection Unit (MPU), ETM that enables reconstuction
+    of program execution.
+
+Interfaces:
+* mult. memory & device bus interfaces
+* ETM
+* Trace Port
+* Debug Port
+* if ETM is there, Cross Trigger Interface (CTI)
+
+
+Notes for me:
+
+RTL - It describes how data moves between hardware registers and what
+    logical or arithmetic operations happen along the way.
+    (Register-Transfer Level)
+
+ADDRESSES IN A SECTION OF STORAGE
+5000	5001	5002	5003	5004	5005	5006	5007
+byte	byte	byte	byte	byte	byte	byte	byte
+halfword	    halfword	    halfword	    halfword
+fullword	                    fullword
+doubleword
+
+Cortex-M3 is two byte boundary aligned.
+
+To start I need 5 things:
+    1. Linker Script
+    2. Startup code
+    3. UART driver
+    4. Updated main.c
+    5. CMake change
+
