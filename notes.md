@@ -161,3 +161,37 @@ To start I need 5 things:
     4. Updated main.c
     5. CMake change
 
+
+1. Linker Script
+
+For B-M embedded systems, .ld defines following areas that work with phys. mem. on device:
+
+* ROM and Flash (read-only & exec)
+    .text -- code
+    .rodata -- read-only data
+
+* RAM (read-write, non-exec)
+    .data -- copied from ROM at startup
+    .bss -- zero-initialized
+    Read-write mem. region that are uninitialized with a defined max. size.
+    These regions are used during program exec. for stack & heap.
+    
+Flash -- non-volatile memory: it keeps its contents with power off.
+
+It holds the program image:
+  - vector table (initial SP + addresses of exception/interrupt handlers)
+  - all code (.text)
+  - constants (.rodata)
+  - initial values of initialized variables (.data, copied to RAM at reset)
+
+It's programmed once (flashed) and stays across power cycles.
+The CPU runs code directly from flash.
+At runtime it's treated as read-only. Changing it needs an
+unlock + sector erase + program sequence (used by bootloaders/updates).
+
+RAM = volatile memory: random contents at power-on.
+It holds everything that changes while running:
+  .data, .bss, heap, stack.
+
+VMA -- virtual memory address, where the section lives while the program runs.
+LMA -- Load Memory Address, where the section bytes are stored in the program image.
