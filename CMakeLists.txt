@@ -1,16 +1,20 @@
 cmake_minimum_required(VERSION 3.22)
-project(sitri C ASM)
+project(sitri C CXX ASM)
 
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_executable(sitri.elf
     firmware/src/main.c
-    # firmware/startup/startup_an385.s
+    firmware/startup/startup_an385.cpp
 )
 
 target_include_directories(sitri.elf PRIVATE firmware/include)
-target_compile_options(sitri.elf PRIVATE -Wall -Wextra -g -ffunction-sections -fdata-sections)
+target_compile_options(sitri.elf PRIVATE
+    -Wall -Wextra -g -ffunction-sections -fdata-sections
+    "$<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions;-fno-rtti>"
+)
 
 # linker script related CMAKE commands
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/firmware/linker/mps2_an385.ld)

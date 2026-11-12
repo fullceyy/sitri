@@ -44,15 +44,18 @@
     .data  = for initialized data
  */
 
-ENTRY(main)
+ENTRY(Reset_Handler)
+
+.ARM.exidx :
+{
+    *(.ARM.exidx*)
+} > FLASH
 
 MEMORY
 {
     FLASH (rx): ORIGIN = 0x0,        LENGTH = 4M /* 4M of read only memory */
     RAM  (rwx): ORIGIN = 0x20000000, LENGTH = 4M 
 }
-
-
 
 /* Top of stack */
 _estack = ORIGIN(RAM) + LENGTH(RAM);
@@ -76,6 +79,15 @@ SECTIONS
         _etext = .;
     } > FLASH
     
+    
+    .init_array :
+    {
+        . = ALIGN(4);
+        __init_array_start = .;
+        KEEP(*(SORT_BY_INIT_PRIORITY(.init_array.*)))
+        KEEP(*(.init_array))
+        __init_array_end = .;
+    } > FLASH
     
     _sidata = LOADADDR(.data);
     .data :
@@ -104,6 +116,7 @@ SECTIONS
         *(.noinit*)
         . = ALIGN(4);
     } > RAM
+
     
     .stack (NOLOAD) :
     {
