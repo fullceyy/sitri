@@ -84,4 +84,4 @@ __attribute__((section(".isr_vector")))
     // external interrupts
 };
 
-
+int main(void);

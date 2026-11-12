@@ -1,12 +1,12 @@
 # sitri
 
-Bare-metal C firmware for an ARM Cortex-M3 (MPS2-AN385, emulated in QEMU) that turns the chip into a tiny storage device. A host program on the PC sends it commands over UART, and the device stores and returns blocks of data from a small simulated memory.
+Bare-metal C++ firmware for an ARM Cortex-M3 (MPS2-AN385, emulated in QEMU) that turns the chip into a tiny storage device. A host program on the PC sends it commands over UART, and the device stores and returns blocks of data from a small simulated memory.
 
 It's a miniature of how a laptop talks to its SSD: the host asks for a block, the device's own processor handles the request and answers with data and a status.
 
 ## How it works
 
-- **Device:** firmware written from scratch: startup code, vector table, linker script, and an interrupt-driven UART driver
+- **Device:** firmware written from scratch in C++20 (no exceptions, no RTTI, no heap): startup code, vector table, linker script, and an interrupt-driven UART driver
 - **Protocol:** framed messages with a header, a command (`IDENTIFY`, `STATUS`, `READ`, `WRITE`), a payload, and a CRC checksum
 - **Validation:** Python tests send valid commands, then garbage, cut-off frames, and floods, to check the device stays correct and never hangs
 
@@ -25,7 +25,7 @@ Work in progress.
 
 ## Build and run
 
-Requires Linux (or WSL) with `gcc-arm-none-eabi`, `libnewlib-arm-none-eabi`, `cmake`, `ninja-build` and `qemu-system-arm`.
+Requires Linux (or WSL) with `gcc-arm-none-eabi`, `libnewlib-arm-none-eabi`, `libstdc++-arm-none-eabi-newlib`, `cmake`, `ninja-build` and `qemu-system-arm`.
 
 ```bash
 cmake --preset firmware

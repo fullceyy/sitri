@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_executable(sitri.elf
-    firmware/src/main.c
+    firmware/src/main.cpp
     firmware/startup/startup_an385.cpp
 )
 

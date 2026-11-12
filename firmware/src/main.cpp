@@ -1,9 +1,9 @@
-#include <stdint.h>
+#include <cstdint>
 
 int main(void)
 {
     volatile uint32_t counter = 0;
     for(;;)
-        counter++;
+        counter = counter + 1;
 }
 
