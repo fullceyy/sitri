@@ -195,3 +195,9 @@ It holds everything that changes while running:
 
 VMA -- virtual memory address, where the section lives while the program runs.
 LMA -- Load Memory Address, where the section bytes are stored in the program image.
+
+
+UART -- Universal Asynchronous Receiver Transmitter.
+
+TX wire -> Transmit OUT of the chip.
+RX wire -> Receive.

@@ -15,7 +15,7 @@ It's a miniature of how a laptop talks to its SSD: the host asks for a block, th
 Work in progress.
 
 - [x] Toolchain, CMake presets, cross-compilation setup
-- [ ] Boot to `main()` (startup code, vector table, linker script)
+- [x] Boot to `main()` (startup code, vector table, linker script)
 - [ ] UART output
 - [ ] Interrupt-driven UART input with a ring buffer
 - [ ] Frame parser and CRC, with unit tests

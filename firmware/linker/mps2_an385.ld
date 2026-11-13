@@ -46,10 +46,6 @@
 
 ENTRY(Reset_Handler)
 
-.ARM.exidx :
-{
-    *(.ARM.exidx*)
-} > FLASH
 
 MEMORY
 {
@@ -79,6 +75,10 @@ SECTIONS
         _etext = .;
     } > FLASH
     
+    .ARM.exidx :
+    {
+        *(.ARM.exidx*)
+    } > FLASH
     
     .init_array :
     {

@@ -23,6 +23,7 @@ Contains:
 */
 
 #include <cstdint>
+#include <algorithm>
 
 #define DEFINE_VOID_ISR(name)        \
         extern "C"                   \
@@ -68,7 +69,6 @@ __attribute__((section(".isr_vector")))
     // Exceptions
     reinterpret_cast<std::uintptr_t>(NMI_Handler),
     reinterpret_cast<std::uintptr_t>(HardFault_Handler),
-    reinterpret_cast<std::uintptr_t>(HardFault_Handler),
     reinterpret_cast<std::uintptr_t>(MemManage_Handler),
     reinterpret_cast<std::uintptr_t>(BusFault_Handler),
     reinterpret_cast<std::uintptr_t>(UsageFault_Handler),
@@ -85,3 +85,52 @@ __attribute__((section(".isr_vector")))
 };
 
 int main(void);
+
+// extern std::uint32_t _sidata, _sdata, _edata, _sbss, _ebss;
+
+// 1. Copy .data from flash (_sidata) to RAM (_sdata to _edata).
+// 2. Zero .bss (_sbss to _ebss).
+// 3. Run static constructors by walking __init_array_start to __init_array_end.
+// 4. Call main(), then loop forever if it returns.
+/*
+┌─────────────────┬────────────────────────────────────────┐
+│     Symbol      │                Meaning                 │
+├─────────────────┼────────────────────────────────────────┤
+│ _sidata         │ start of .data initial values in flash │
+├─────────────────┼────────────────────────────────────────┤
+│ _sdata / _edata │ start / end of .data in RAM            │
+├─────────────────┼────────────────────────────────────────┤
+│ _sbss / _ebss   │ start / end of .bss in RAM             │
+├─────────────────┼────────────────────────────────────────┤
+│ _estack         │ end (top) of the stack                 │
+└─────────────────┴────────────────────────────────────────┘
+
+// static construction
+.init_array :
+{
+    . = ALIGN(4);
+    __init_array_start = .;
+    KEEP(*(SORT_BY_INIT_PRIORITY(.init_array.*)))
+    KEEP(*(.init_array))
+    __init_array_end = .;
+} > FLASH
+*/
+
+extern "C" void Reset_Handler()
+{
+    // 1. Copy .data from flash to RAM
+    extern std::uint32_t _sidata, _sdata, _edata, _sbss, _ebss;
+    auto size = static_cast<size_t>(&_edata - &_sdata);
+    std::copy(&_sidata, &_sidata + size, &_sdata);
+    // 2. Zero .bss (_sbss to _ebss)
+    std::fill(&_sbss, &_ebss, UINT8_C(0));
+    // 3. Run static constructors by walking __init_array_start to __init_array_end
+    typedef void (*func_t)();
+    // extern void (*__init_array_start[])(), (*__init_array_end[])();
+    extern func_t __init_array_start[0];
+    extern func_t __init_array_end[0];
+    std::for_each(__init_array_start, __init_array_end, [](func_t fPtr) { fPtr(); });
+    // 4. Call main();
+    main();
+    while(true) {};
+}
